@@ -3,6 +3,7 @@ import iroh
 from .blobs import Blobs
 from .collections import Collections
 
+
 class Genmai(object):
     def __init__(self, node: iroh.IrohNode):
         self.node = node

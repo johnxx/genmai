@@ -1,11 +1,10 @@
-from .core import Genmai
-from helpers import ensure_bytes
+from .helpers import ensure_bytes
 import iroh
 import os
 
 
 class Blobs(object):
-    def __init__(self, genmai: Genmai):
+    def __init__(self, genmai):
         self._genmai = genmai
 
     def __getitem__(self, hash_val):
@@ -26,7 +25,7 @@ class Blobs(object):
 
 
 class Blob(object):
-    def __init__(self, genmai: Genmai, hash_val: str or iroh.Hash):
+    def __init__(self, genmai, hash_val: str or iroh.Hash):
         self._genmai = genmai
         if not isinstance(hash_val, iroh.Hash):
             hash_val = iroh.Hash.from_string(hash_val)
@@ -34,7 +33,7 @@ class Blob(object):
         self.hash = hash_val
 
     @classmethod
-    def from_file(cls, genmai: Genmai, path, collection_tag=None, wrap=None):
+    def from_file(cls, genmai, path, collection_tag=None, wrap=None):
         if not collection_tag:
             collection_tag = iroh.SetTagOption.auto()
         elif isinstance(collection_tag, str or bytes):
@@ -48,7 +47,7 @@ class Blob(object):
         elif isinstance(wrap, str):
             wrap = iroh.WrapOption.wrap(wrap)
 
-        add_progress = Genmai.AddCallback()
+        add_progress = genmai.AddCallback()
         genmai.node.blobs_add_from_path(os.path.realpath(path), in_place=False, tag=collection_tag, wrap=wrap,
                                         cb=add_progress)
         if not add_progress.success:
@@ -56,7 +55,7 @@ class Blob(object):
         return cls(genmai, add_progress.result['all']['hash'])
 
     @classmethod
-    def from_bytes(cls, genmai: Genmai, data):
+    def from_bytes(cls, genmai, data):
         result = genmai.node.blobs_add_bytes(data)
         return cls(genmai, result.hash)
 

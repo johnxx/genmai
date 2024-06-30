@@ -1,11 +1,10 @@
-from helpers import ensure_bytes
-from .core import Genmai
+from .helpers import ensure_bytes
 from .blobs import Blob
 import iroh
 
 
 class Collections(object):
-    def __init__(self, genmai: Genmai):
+    def __init__(self, genmai):
         self._genmai = genmai
 
     def __getitem__(self, name):
@@ -27,7 +26,7 @@ class Collections(object):
 
 
 class Collection(object):
-    def __init__(self, genmai: Genmai, hash_val: str | iroh.Hash | None = None):
+    def __init__(self, genmai, hash_val: str | iroh.Hash | None = None):
         self._genmai = genmai
         if not hash_val:
             self._collection = iroh.Collection()
@@ -49,7 +48,7 @@ class Collection(object):
             self._name = ensure_bytes(name)
 
     @classmethod
-    def from_blobs(cls, genmai: Genmai, blobs: {Blob}, name: str or bytes | None = None):
+    def from_blobs(cls, genmai, blobs: {Blob}, name: str or bytes | None = None):
         collection = Collection(genmai, None)
         for k, v in blobs.items():
             collection.add_blob(k, v)

@@ -5,6 +5,8 @@ import iroh
 current_dir = os.path.dirname(os.path.abspath(__file__))
 iroh_node = iroh.IrohNode('./iroh-data')
 g = Genmai(iroh_node)
+with open('test.txt', 'w') as f:
+    f.write('honk')
 b1 = g.blobs.create_from_file('test.txt')
 b2 = g.blobs.create_from_bytes(b1.to_bytes())
 p1 = 'out.txt'
