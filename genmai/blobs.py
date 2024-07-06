@@ -1,39 +1,40 @@
-from .helpers import ensure_bytes
+from .helpers import AddCallback, ensure_bytes
+
 import iroh
 import os
 
 
 class Blobs(object):
-    def __init__(self, genmai):
-        self._genmai = genmai
+    def __init__(self, node: iroh.IrohNode):
+        self._node = node
 
     def __getitem__(self, hash_val):
-        return Blob(self._genmai, hash_val)
+        return Blob(self._node, hash_val)
 
     def items(self):
-        for h in self._genmai.node.blobs_list():
+        for h in self._node.blobs_list():
             yield str(h), self[h]
 
     def __len__(self):
-        return len(self._genmai.node.blobs_list())
+        return len(self._node.blobs_list())
 
     def create_from_file(self, *args, **kwargs):
-        return Blob.from_file(self._genmai, *args, **kwargs)
+        return Blob.from_file(self._node, *args, **kwargs)
 
     def create_from_bytes(self, *args, **kwargs):
-        return Blob.from_bytes(self._genmai, *args, **kwargs)
+        return Blob.from_bytes(self._node, *args, **kwargs)
 
 
 class Blob(object):
-    def __init__(self, genmai, hash_val: str or iroh.Hash):
-        self._genmai = genmai
+    def __init__(self, node, hash_val: str or iroh.Hash):
+        self._node = node
         if not isinstance(hash_val, iroh.Hash):
             hash_val = iroh.Hash.from_string(hash_val)
-        self.size = self._genmai.node.blobs_size(hash_val)
+        self.size = self._node.blobs_size(hash_val)
         self.hash = hash_val
 
     @classmethod
-    def from_file(cls, genmai, path, collection_tag=None, wrap=None):
+    def from_file(cls, node, path, collection_tag=None, wrap=None):
         if not collection_tag:
             collection_tag = iroh.SetTagOption.auto()
         elif isinstance(collection_tag, str or bytes):
@@ -47,17 +48,17 @@ class Blob(object):
         elif isinstance(wrap, str):
             wrap = iroh.WrapOption.wrap(wrap)
 
-        add_progress = genmai.AddCallback()
-        genmai.node.blobs_add_from_path(os.path.realpath(path), in_place=False, tag=collection_tag, wrap=wrap,
-                                        cb=add_progress)
+        add_progress = AddCallback()
+        node.blobs_add_from_path(os.path.realpath(path), in_place=False, tag=collection_tag, wrap=wrap,
+                                 cb=add_progress)
         if not add_progress.success:
             raise Exception(add_progress.result['error'])
-        return cls(genmai, add_progress.result['all']['hash'])
+        return cls(node, add_progress.result['all']['hash'])
 
     @classmethod
-    def from_bytes(cls, genmai, data):
-        result = genmai.node.blobs_add_bytes(data)
-        return cls(genmai, result.hash)
+    def from_bytes(cls, node, data):
+        result = node.blobs_add_bytes(data)
+        return cls(node, result.hash)
 
     def to_file(self, path, export_format='blob', export_mode='copy'):
         if export_format == 'blob':
@@ -74,13 +75,13 @@ class Blob(object):
         else:
             raise Exception(f"Unknown export mode: {export_mode}")
 
-        self._genmai.node.blobs_export(self.hash, os.path.realpath(path), export_format, export_mode)
+        self._node.blobs_export(self.hash, os.path.realpath(path), export_format, export_mode)
 
     def to_bytes(self, offset=0, length=None):
         if offset == 0 and length is None:
-            return self._genmai.node.blobs_read_to_bytes(self.hash)
+            return self._node.blobs_read_to_bytes(self.hash)
         elif offset > 0 or length <= self.size:
-            return self._genmai.node.blobs_read_at_to_bytes(self.hash, offset, length)
+            return self._node.blobs_read_at_to_bytes(self.hash, offset, length)
         else:
             raise Exception("Invalid offset or length")
 
@@ -88,7 +89,7 @@ class Blob(object):
         return self.size
 
     def __del__(self):
-        self._genmai.node.blobs_delete_blob(self.hash)
+        self._node.blobs_delete_blob(self.hash)
 
     def share(self, blob_format='raw', ticket_options='relay_and_addresses'):
         if blob_format == 'raw':
@@ -107,4 +108,4 @@ class Blob(object):
         else:
             raise Exception(f"Unknown ticket options: {ticket_options}")
 
-        return self._genmai.node.blobs_share(self.hash, blob_format, ticket_options)
+        return self._node.blobs_share(self.hash, blob_format, ticket_options)

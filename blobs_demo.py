@@ -19,20 +19,21 @@ for key, val in g.blobs.items():
     contents = val.to_bytes()
     print(f"{key}: {contents}")
 
-blobbies = {
-    'alf': g.blobs.create_from_bytes(b'fleep'),
-    'foo': g.blobs.create_from_file('test.txt'),
-    'bar': g.blobs.create_from_bytes(b'baz'),
-    'baz': g.blobs.create_from_bytes(b'qux'),
-    'gronk': g.blobs.create_from_bytes(b'gronk')
-}
-c = g.collections.create_from_blobs(blobbies, 'test')
-assert len(c) == 5
-c.save()
-assert len(g.collections) == 1
-c = g.collections['test']
-assert len(c) == 5
-for key, val in blobbies.items():
-    bytes_in = blobbies[key].to_bytes()
-    bytes_out = c[key].to_bytes()
-    print(f"{key}: {bytes_in} => {bytes_out}")
+# blobbies = {
+#     'alf': g.blobs.create_from_bytes(b'fleep'),
+#     'foo': g.blobs.create_from_file('test.txt'),
+#     'bar': g.blobs.create_from_bytes(b'baz'),
+#     'baz': g.blobs.create_from_bytes(b'qux'),
+#     'gronk': g.blobs.create_from_bytes(b'gronk')
+# }
+# c = g.collections.create_from_blobs(blobbies, 'test')
+# assert len(c) == 5
+# c.save()
+# assert len(g.collections) == 1
+# c = g.collections['test']
+# assert len(c) == 5
+# for key, val in blobbies.items():
+#     bytes_in = blobbies[key].to_bytes()
+#     bytes_out = c[key].to_bytes()
+#     print(f"{key}: {bytes_in} => {bytes_out}")
+#

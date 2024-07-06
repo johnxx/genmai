@@ -1,1 +1,1 @@
-from .core import Genmai
+from .genmai import Genmai
