@@ -7,12 +7,12 @@ class Collections(object):
     def __init__(self, node):
         self._node = node
 
-    def __getitem__(self, name):
+    async def get(self, name):
         name = ensure_bytes(name)
-        collections = self._node.blobs_list_collections()
+        collections = await self._node.blobs_list_collections()
         for collection_info in collections:
             if collection_info.tag == name:
-                return Collection(self._node, collection_info.hash)
+                return await Collection.open(self._node, collection_info.hash)
 
     def __len__(self):
         return len(self._node.blobs_list_collections())
@@ -29,15 +29,22 @@ class Collections(object):
 
 
 class Collection(object):
-    def __init__(self, node, hash_val: str | iroh.Hash | None = None):
+    def __init__(self, node, collection: iroh.Collection):
         self._node = node
-        if not hash_val:
-            self._collection = iroh.Collection()
-        else:
-            if not isinstance(hash_val, iroh.Hash):
-                hash_val = iroh.Hash.from_string(hash_val)
-            self._collection = node.blobs_get_collection(hash_val)
+        self._collection = collection
         self._name = None
+
+    @classmethod
+    def create(cls, node):
+        _collection = iroh.Collection()
+        return cls(node, _collection)
+
+    @classmethod
+    async def open(cls, node, hash_val: str | iroh.Hash):
+        if not isinstance(hash_val, iroh.Hash):
+            hash_val = iroh.Hash.from_string(hash_val)
+        _collection = await node.blobs_get_collection(hash_val)
+        return cls(node, _collection)
 
     @property
     def name(self):
@@ -51,16 +58,16 @@ class Collection(object):
             self._name = ensure_bytes(name)
 
     @classmethod
-    def from_dict(cls, node, bytes_dict: {str: bytes}, name: str or bytes | None = None):
-        collection = Collection(node, None)
+    async def from_dict(cls, node, bytes_dict: {str: bytes}, name: str or bytes | None = None):
+        collection = Collection.create(node)
         for k, v in bytes_dict.items():
-            collection.add_blob(k, Blob.from_bytes(node, v))
+            collection.add_blob(k, await Blob.from_bytes(node, v))
         collection.name = name
         return collection
 
     @classmethod
     def from_blobs(cls, node, blobs: {Blob}, name: str or bytes | None = None):
-        collection = Collection(node, None)
+        collection = Collection.create(node)
         for k, v in blobs.items():
             collection.add_blob(k, v)
         collection.name = name
@@ -71,8 +78,8 @@ class Collection(object):
         res = self._collection.blobs()
         links = {}
         for ln in res:
-            out = Blob(self._node, ln.link).to_bytes()
-            print(f"name: {ln.name}, link: {out}")
+            # out = await Blob(self._node, ln.link).to_bytes()
+            # print(f"name: {ln.name}, link: {out}")
             links[ln.name] = Blob(self._node, ln.link)
         return links
 
@@ -90,10 +97,10 @@ class Collection(object):
     def __getitem__(self, name):
         return self.links[name]
 
-    def save(self):
+    async def save(self):
         if not self.name:
             tag = iroh.SetTagOption.auto()
         else:
             tag = iroh.SetTagOption.named(self.name)
-        th = self._node.blobs_create_collection(self._collection, tag, [])
+        th = await self._node.blobs_create_collection(self._collection, tag, [])
         return th.tag, th.hash

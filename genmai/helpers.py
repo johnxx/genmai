@@ -14,7 +14,7 @@ class AddCallback(iroh.AddCallback):
     def result(self):
         return self._result
 
-    def progress(self, progress: iroh.AddProgress):
+    async def progress(self, progress: iroh.AddProgress):
         self._status = progress.type()
         if self._status == iroh.AddProgressType.FOUND:
             p = progress.as_found()
@@ -33,6 +33,27 @@ class AddCallback(iroh.AddCallback):
             self._result['error'] = p.error
         else:
             self._result['error'] = f"Unknown event adding blob: {self._status}"
+
+
+class SubscribeCallback(iroh.SubscribeCallback):
+    async def event(self, event: iroh.LiveEvent):
+        event_type = event.type()
+        # Event types: INSERT_LOCAL, INSERT_REMOTE, CONTENT_READY, NEIGHBOR_UP, NEIGHBOR_DOWN
+        # SYNC_FINISHED, PENDING_CONTENT_READY
+        if event_type == iroh.LiveEventType.INSERT_LOCAL:
+            entry = event.as_insert_local()
+        elif event_type == iroh.LiveEventType.INSERT_REMOTE:
+            insert_remote = event.as_insert_remote()
+        elif event_type == iroh.LiveEventType.CONTENT_READY:
+            hash_val = event.as_content_ready()
+        elif event_type == iroh.LiveEventType.NEIGHBOR_UP:
+            pub_key = event.as_neighbor_up()
+        elif event_type == iroh.LiveEventType.NEIGHBOR_DOWN:
+            pub_key = event.as_neighbor_down()
+        elif event_type == iroh.LiveEventType.SYNC_FINISHED:
+            sync_event = event.as_sync_finished()
+        else:
+            raise Exception(f"Unknown event type: {event_type}")
 
 
 def ensure_bytes(text):
